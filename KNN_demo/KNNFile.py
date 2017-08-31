@@ -15,10 +15,10 @@ def file2matrix(fileName):
             classLableVector.append(lineDatas[-1])
             index += 1
         dictClassLable = Counter(classLableVector)
-        print(dictClassLable)
+        # print(dictClassLable)
         classLable = []
         kind = list(dictClassLable)
-        print(kind)
+        # print(kind)
         for item in classLableVector:
             if item == kind[0]:
                 item = 1
