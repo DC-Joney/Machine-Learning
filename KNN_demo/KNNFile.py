@@ -30,5 +30,7 @@ def file2matrix(fileName):
         return  returnMat,classLable
 
 
+
 returnMat,classLable = file2matrix("datingTestSet.txt")
 print(returnMat,classLable)
+

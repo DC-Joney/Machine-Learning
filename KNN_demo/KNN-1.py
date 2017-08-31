@@ -22,7 +22,8 @@ def classify0(inx,dataSet,lable,k):
     distances = sqrt(sqDistances)  ###sqrt(x4,y4)
     print(distances)
     sortedDistIndex = argsort(distances)  ###从大到小排序 返回下标
-    print("sort : %s",sortedDistIndex)
+    print(sortedDistIndex)
+
     classCount = {}   ###统计
     for i in range(k):
         classes = ''
@@ -31,11 +32,14 @@ def classify0(inx,dataSet,lable,k):
         classCount[voteLable] = classCount.get(voteLable,0)+1  #
         maxCount = 0
         ### 选取出现的类别次数最多的类别
+
     for key,value in classCount.items():
         if value > maxCount:
             maxCount = value
             classes = key
     return classes
+
+
 group,lable = KNN.createDataSet()
 print(group)
 print(classify0([0,0],group,lable,3))

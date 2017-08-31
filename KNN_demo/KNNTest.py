@@ -4,4 +4,9 @@ result = tile([0,0],(2,2))
 print(result)
 distDemo = {0: 1}
 print(distDemo.get(0,1))
+
 returnMat,classLable = KNNFile.file2matrix("datingTestSet.txt")
+
+returnMat,classLable = KNNFile.file2matrix("D:\datingTestSet.txt")
+KNN2.autoNorm(returnMat)
+

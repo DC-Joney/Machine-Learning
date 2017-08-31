@@ -21,6 +21,16 @@ else:
     matplotlib.rcParams['font.family'] = 'sans-serif'
 
 
+#coding:utf-8
+from numpy import  *
+import operator
+import matplotlib
+import matplotlib.pyplot as plt
+from KNN_demo import KNNFile
+
+#指定默认字体
+matplotlib.rcParams['font.sans-serif'] = ['SimHei']
+matplotlib.rcParams['font.family'] = 'sans-serif'
 #解决负号'-'显示为方块的问题
 matplotlib.rcParams['axes.unicode_minus'] = False
 
@@ -32,7 +42,8 @@ matplotlib.rcParams['axes.unicode_minus'] = False
 # print(15.0*array(datingLabels))
 # print(datingLabels[:,1])
 ## 归一化数据,保证特征等权重
-def matplotKNN(returnMat, datingLabels):
+
+def matplotKNN(returnMat,datingLabels):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     type1 = ax.scatter(returnMat[:, 0], returnMat[:, 1], 15 * array(datingLabels), 15 * array(datingLabels))
@@ -54,6 +65,18 @@ def autoNorm(dataSet):
     maxVals = dataSet.max(0)  # 获取训练样本中最大的数据
     print(maxVals)
     ranges = maxVals - minVals  # 获取区间范围
+    plt.xlabel('玩视频游戏所消耗的时间百本比')
+    plt.ylabel('每年获取的飞行长客里程数')
+    plt.legend(loc='upper right')
+    plt.show()
+
+# 矩阵中的三维数据 权重一致 所以 不会影响到其他计算
+def autoNorm(dataSet):
+    minVals = dataSet.min(0)  #获取训练样本中最小的数据
+    print(minVals)
+    maxVals = dataSet.max(0)  #获取训练样本中最大的数据
+    print(maxVals)
+    ranges = maxVals - minVals  #获取区间范围
 
     print(ranges)
     normDataSet = zeros(shape(dataSet))  ##建立与dataSet结构一样的矩阵
@@ -108,3 +131,10 @@ def datingTest(fileName):
 #
 # # matplotKNN(returnMat,classModel)
 # autoNorm(returnMat)
+
+    normDataSet = dataSet - tile(minVals,(m,1))
+    print(normDataSet)
+    normDataSet /= tile(ranges, (m, 1))
+    print(normDataSet)
+    return normDataSet,ranges,minVals
+
