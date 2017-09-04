@@ -1,5 +1,7 @@
-###二叉树
+
 #condig=utf-8
+
+###二叉树
 #树节点
 class Node(object):
     def __init__(self,elem=-1, lchild =None,rchild = None):
@@ -116,16 +118,17 @@ class Tree(object):
                 print(myStack2.pop().elem)
 
 if __name__ == '__main__':
-    """主函数"""
-    elems = range(10)           #生成十个数据作为树节点
-    tree = Tree()          #新建一个树对象
-    for elem in elems:
-        tree.add(elem)           #逐个添加树的节点
-
-
-    print ('\n\n递归实现先序遍历:')
-    # tree.front_digui(tree.root)
-    # tree.level_queue(tree.root)
-    # print(tree.root.elem)
-    # print(list(f.elem for f in tree.myQueue))
-    tree.middle_digui(tree.root)
+    pass
+    # """主函数"""
+    # elems = range(10)           #生成十个数据作为树节点
+    # tree = Tree()          #新建一个树对象
+    # for elem in elems:
+    #     tree.add(elem)           #逐个添加树的节点
+    #
+    #
+    # print ('\n\n递归实现先序遍历:')
+    # # tree.front_digui(tree.root)
+    # # tree.level_queue(tree.root)
+    # # print(tree.root.elem)
+    # # print(list(f.elem for f in tree.myQueue))
+    # tree.middle_digui(tree.root)

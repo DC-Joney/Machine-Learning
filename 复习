@@ -1,0 +1,24 @@
+基础:
+    集合源码 http://www.jianshu.com/u/1f0067e24ff8
+    io文件递归遍历 io的模式
+    线程: 并发,线程池 jmm模型
+    scoket tcp/ip协议 http协议 ssh协议 jwt协议  https协议 网站跨域 jsonp cross
+框架:
+    mybatis spring spring boot spring cloud netty shiro thymleaf freemaker quartz redis锁机制框架
+
+事物: 弱事物 强事物  TCC事务
+
+工具: redis nginx active mq rabbit mq svn docker JHipster
+linux: mysql主从 shell 三剑客 awk sed  linux命令 vpn管理 linux调优
+
+jvm 参数调优 问题定位: jstack jmap OQL查询 java自动图形化工具jconsole
+
+
+算法: 决策树,红黑树 KMP算法 KNN算法 布隆过滤器 位运算 双向链表 单向链表 双向循环链表 java(7)之后废弃
+
+前段: bootstarp  layer 拼图 vue:eleui iviews webpack babel  es6 react
+
+python : 人脸识别 爬虫 和 部分自动化运维  flask django  numpy matlib
+
+
+nodejs ejs ， handler npm express
