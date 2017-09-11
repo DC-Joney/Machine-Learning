@@ -1,0 +1,48 @@
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})
+public @interface CallerSensitive {
+}
+
+转:  http://blog.csdn.net/HEL_WOR/article/details/50199797
+
+@CallSensitive是JVM中专用的注解，在类加载过过程中是可以常常看到这个注解的身影的。
+这是在Sun.reflect中的定义：
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ java.lang.annotation.ElementType.METHOD })
+public @interface CallerSensitive {
+}
+
+
+而对@CallSensitive的使用如下：
+
+@CallerSensitive
+    public final ClassLoader getParent() {
+        if (this.parent == null)
+            return null;
+        SecurityManager localSecurityManager = System.getSecurityManager();
+        if (localSecurityManager != null)
+            checkClassLoaderPermission(this.parent, Reflection.getCallerClass());
+        return this.parent;
+    }
+
+至少在刚刚看见这个注解时我是不明白@CallSensitive有什么用处，一来这是JVM里专用的一个注解，二来在JVM规范和一些书上也没有看到对这个注解的解释，第三是发现百度不出来对这个注解的解释。
+
+这里有两个解释：
+What does the sun.reflect.CallerSensitive annotation mean?
+网址: https://stackoverflow.com/questions/22626808/what-does-the-sun-reflect-callersensitive-annotation-mean
+JEP 176: Mechanical Checking of Caller-Sensitive Methods
+网址: http://openjdk.java.net/jeps/176
+StackOverFlow里的回答，答案只是提到了@CallSensitive用来找到真正发起反射请求的类的，但没有提到具体怎么寻找的，而在OpenJDK文档里，有下面这句话。
+
+    When invoked via reflection, these methods must be handled specially in order to ensure that the class of the actual caller, rather than some class of the reflection mechanism itself, is returned by the getCallerClass method. The logic for doing this involves pattern matching against a hand-maintained list of caller-sensitive methods,
+
+我原本的理解是这个注解用来区分开反射和自省的，并且只有调用方有这个注解我才会回应它，但感觉总有地方说不过去。所以我去问了莫枢：
+
+这个注解是为了堵住漏洞用的。曾经有黑客通过构造双重反射来提升权限，原理是当时反射只检查固定深度的调用者的类，看它有没有特权，例如固定看两层的调用者（getCallerClass(2)）。如果我的类本来没足够权限群访问某些信息，
+那我就可以通过双重反射去达到目的：反射相关的类是有很高权限的，而在 我->反射1->反射2 这样的调用链上，反射2检查权限时看到的是反射1的类，这就被欺骗了，导致安全漏洞。使用CallerSensitive后，getCallerClass不再用固定深度去寻找actual caller（“我”），而是把所有跟反射相关的接口方法都标注上CallerSensitive，搜索时凡看到该注解都直接跳过，这样就有效解决了前面举例的问题
+
+下面是我的理解：
+当”我“->反射1->反射2->反射3->反射4->…反射->N，从”我“开始后的每个引用对象，当我引用下一个对象（对象1）时，首先会被装载，验证，这个时候把这个对象在这个过程中没调用过的反射接口都标记上@callSentitive，然后对象1引用对象2后重复这个过程一直到N，那么在N调用GetCallCalss时跳过这中间所有已经被标记的对象，最后到达未被标记的“我”。
+
+如果是这样的话，我倒是比较好奇当初用固定深度检查调用类有无权限时，从“我”->对象1 -> 对象2，如果对象1有很高的权限，那”我”是如何有权限调用对象1的？有点想读和写的权限控制，有点模糊，先复习下那部分再来补充吧

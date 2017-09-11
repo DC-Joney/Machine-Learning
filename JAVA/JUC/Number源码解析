@@ -1,0 +1,33 @@
+/**
+因为byte 和 short是等级最低的两个 类型所以 在强转的时候不用担心 损失精度问题 所以由Nuber类实现
+
+所有的包装类（Integer、Long、Byte、Double、Float、Short）都是抽象类 Number 的子类。
+提供类基本类型值之间的安全转换
+**/
+
+public abstract class Number implements java.io.Serializable {
+    //返回一个init类型的值
+    public abstract int intValue();
+
+   //返回一个long类型的值
+    public abstract long longValue();
+
+    //返回一个float类型的值
+    public abstract float floatValue();
+
+    //返回一个double类型的值
+    public abstract double doubleValue();
+
+    //返回一个byte类型的值
+    public byte byteValue() {
+        return (byte)intValue();
+    }
+
+    //返回一个short类型的值
+    public short shortValue() {
+        return (short)intValue();
+    }
+
+    /** use serialVersionUID from JDK 1.0.2 for interoperability */
+    private static final long serialVersionUID = -8742448824652078965L;
+}

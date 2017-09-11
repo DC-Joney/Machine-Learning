@@ -1,0 +1,197 @@
+这个方法可以在在对象o的内存偏移offset后与期望值比较，如果等于期望值，就更新为x。由于是直接操作内存的。比如要这样更新一个对象的某个属性，就要得到这个属性在内存中的偏移量
+ public final native boolean compareAndSwapInt(Object o, long offset,
+                                                  int expected,
+                                                  int x);
+
+unsafe提供了objectFieldOffset方法来得到某个属性在对象中的偏移量：
+public native long objectFieldOffset(Field f);
+
+还有一些put方法，比如
+    public native void putOrderedInt(Object obj, long offset, int value);
+    就是直接把这个对象内存偏移offset然后直接赋int值。
+
+
+跟我一起剖析 Java 并发源码之 Unsafe
+
+  本篇文章是系列文章《跟我一起剖析Java并发源码》的第一篇文章。以后会每周保持定时更新。这些系列文章算是对《java并发编程系统与模型》的一些补充吧，真心希望大家能支持这本书，您的支持就是我最大的动力！
+  在java并发相关的源代码学习中，有一个类经常出现，这个类就是位于sun.misc包中的Unsafe类。比如，属于Java并发包中最重要的类之一的AbstractQueuedSynchronizer中就经常调用这个类的方法。
+  今天就来简单剖析一下这个类。
+  Unsafe类是一个很低级别的类，执行低级别的不安全的操作。所以使用的时候要小心，只有那些获得信任的代码才能调用。为什么说它是比较低级的呢？因为它能直接操作任意的内存。那为什么它是危险的呢？因为它能直接操作任意的内存。
+
+  Unsafe类方法众多，一一讲述没太必要，聪明的你们看完这篇文章再看看源码理解其他方法绝对没什么问题。先来看看有compareAndSwap开头的一系列方法，从名字就可以看出这肯定是使用的CAS算法。CAS算法对这里不再详细说明了。在《java并发编程系统与模型》这本书有详细叙述。
+
+  随便拿一个compareAndSwapInt举例：
+
+  public final native boolean compareAndSwapInt(Object o, long offset,
+                                                  int expected,
+                                                  int x);
+
+  这个方法可以在在对象o的内存偏移offset后与期望值比较，如果等于期望值，就更新为x。由于是直接操作内存的。比如要这样更新一个对象的某个属性，就要得到这个属性在内存中的偏移量。unsafe提供了objectFieldOffset方法来得到某个属性在对象中的偏移量：
+
+   public native long objectFieldOffset(Field f);
+
+  比如有这个一个对象：
+
+
+    class User{
+
+   private  String   name
+
+      }
+
+  要得到属性name 偏移量， 就可以使用
+
+nameOffset = unsafe.objectFieldOffset(User.class.getDeclaredField("name"));
+
+  还有一些put方法，比如
+
+ public native void putOrderedInt(Object obj, long offset, int value);
+
+就是直接把这个对象内存偏移offset然后直接赋int值。
+
+Unsafe类是一个受保护的类，是不能直接在程序中使用的。直接的使用会抛出SecurityException异常，下面来测验一下（import sun.misc.Unsafe 需要手工添加，Eclispe或者其他IDE并不会直接提示）：
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import sun.misc.Unsafe;
+
+public class UnSafeTest {
+    public static void main(String[] args) {
+        try {
+            Unsafe unsafe = Unsafe.getUnsafe();
+            User user = new User();
+            long ageOffset = unsafe.objectFieldOffset(filed);
+            unsafe.putInt(user, ageOffset, 10);
+            System.out.println(user.getAge());
+            System.out.println(unsafe);
+        } catch (Exception e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+}
+
+查看获取实例的方法中有一个VM.isSystemDomainLoader检测，如果不是的话，会抛出SecurityException：
+
+  @CallerSensitive
+    public static Unsafe getUnsafe() {
+        Class<?> caller = Reflection.getCallerClass();
+        if (!VM.isSystemDomainLoader(caller.getClassLoader()))
+            throw new SecurityException("Unsafe");
+        return theUnsafe;
+    }
+
+  来看看M.isSystemDomainLoader内部的方法：
+
+ public static boolean isSystemDomainLoader(ClassLoader loader) {
+        return loader == null;
+    }
+
+  在Java中，如果一个对象的classLoader等于null，这就说明这个对象的类加载器是boostrap classloader，那么如果类是由bootstrap classloader加载的话，那么它就是受信任的代码。
+
+  可以直接打印String的ClassLoader来检测一下结论是否正确：
+
+System.out.println(String.class.getClassLoader());
+
+  理论上有两种方法可以打破这种限制。一种就是将User类变成SystemDomainLoader，JAVA本身的类加载机制导致了改变SystemDomainLoader方法暂时较难做到，通用的都是通过反射的方法。一种是通过反射其实体变量theUnsafe：
+
+public class UnSafeTest {
+    public static void main(String[] args) {
+        try {
+            User user = new User();
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            Unsafe UNSAFE = (Unsafe) theUnsafe.get(null);
+            System.out.println(UNSAFE);
+            Field filed = user.getClass().getDeclaredField("age");
+            long ageOffset = UNSAFE.objectFieldOffset(filed);
+            UNSAFE.putInt(user, ageOffset, 10);
+            System.out.println(user.getAge());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+  打印user对象的age属性，结果输出了10。
+
+  另外一种就是通过其构造器反射，重新得到一个实例:
+
+public class UnSafeTest {
+    public static void main(String[] args) {
+        try {
+
+            Constructor<Unsafe> con = Unsafe.class.getDeclaredConstructor();
+            // 用该私有构造方法创建对象
+            // IllegalAccessException:非法的访问异常。
+            // 暴力访问
+            con.setAccessible(true);// 值为true则指示反射的对象在使用时应该取消Java语言访问检查。
+
+            User user = new User();
+
+            System.out.println(UNSAFE);
+//            Unsafe unsafe =(Unsafe) clazz.newInstance();
+            Field filed = user.getClass().getDeclaredField("age");
+            long ageOffset = UNSAFE.objectFieldOffset(filed);
+            UNSAFE.putInt(user, ageOffset, 10);
+            System.out.println(user.getAge());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+其中
+
+Constructor<Unsafe> con = Unsafe.class.getDeclaredConstructor();
+
+也可以替换成class.forname的形式：
+
+Constructor<Unsafe> con = (Constructor<Unsafe>) Class.forName("sun.misc.Unsafe").getDeclaredConstructor();
+
+为什么要直接操作内存呢？
+因为快啊！
+
+如果说被修改的属性是一个基本类型，那么直接操作内存的优势并不大。但是如果被修改的属性是一个对象，差别就比较大了。不信来做一个非常简单的比较：
+
+public class User {
+    private Integer age;
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+
+
+}
+
+public class UnSafeTest {
+    public static void main(String[] args) {
+        try {
+            Constructor<Unsafe> con = (Constructor<Unsafe>) Class.forName("sun.misc.Unsafe").getDeclaredConstructor();
+            con.setAccessible(true);
+            User user = new User();
+            Unsafe UNSAFE = con.newInstance(null);
+            Field filed = user.getClass().getDeclaredField("age");
+            long s1=System.currentTimeMillis();
+            for(int i=0;i<1000000;i++){
+                user.setAge(i);
+            }
+            System.out.println(System.currentTimeMillis()-s1);
+            long ageOffset = UNSAFE.objectFieldOffset(filed);
+            long s2=System.currentTimeMillis();
+            for(int i=0;i<1000000;i++){
+                UNSAFE.putInt(user, ageOffset, i);
+            }
+            System.out.println(System.currentTimeMillis()-s2);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+  set方法和putInt各执行一百万次，性能差了好几倍。如果被修改的属性是一个非常复杂的对象的话，性能差距会更大。因为每次set值的时候，JVM内部依旧会每次去找这个对象属性的内存偏移量。现在我直接将偏移量拿出来了，不用每次找偏移量了，速度加快那是必然滴，当然被修改的对象肯定是一个对象。
